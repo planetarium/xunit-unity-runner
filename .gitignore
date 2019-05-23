@@ -8,6 +8,7 @@
 /[Bb]uild/
 /[Bb]uilds/
 /[Ll]ogs/
+/[Dd]ist/
 /[Mm]emoryCaptures/
 
 # Never ignore Asset meta data
@@ -61,3 +62,5 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Unity License
+*.ulf
