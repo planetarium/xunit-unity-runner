@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
+using Mono.Options;
 using UnityEngine;
 using Xunit;
 using Xunit.Abstractions;
@@ -11,6 +13,54 @@ using Xunit.Runners;
 
 public class EntryPoint : MonoBehaviour
 {
+    private static readonly OptionSet Options = new OptionSet
+    {
+        {
+            "C|exclude-class=",
+            "Exclude a test class by its fully qualified name.  " +
+            "This option can be used multiple times.",
+            className => ExcludedClasses.Add(className)
+        },
+        {
+            "M|exclude-method=",
+            "Exclude a test method by its fully qualified name.  " +
+            "This option can be used multiple times.",
+            method => ExcludedMethods.Add(method)
+        },
+        {
+            "T|exclude-trait-condition=",
+            "Exclude a trait condition (e.g., `-T TraitName=value').  " +
+            "This option can be used multiple times.",
+            traitCondition =>
+            {
+                int equal = traitCondition.IndexOf('=');
+                string traitName, value;
+                if (equal < 0)
+                {
+                    traitName = traitCondition;
+                    value = string.Empty;
+                }
+                else
+                {
+                    traitName = traitCondition.Substring(0, equal);
+                    value = traitCondition.Substring(equal + 1);
+                }
+                ExcludedTraitConditions.Add((traitName, value));
+            }
+        },
+        {
+            "h|help",
+            "Show this message and exit.",
+            help => Help = !(help is null)
+        }
+    };
+
+    static readonly ISet<string> ExcludedClasses = new HashSet<string>();
+    static readonly ISet<string> ExcludedMethods = new HashSet<string>();
+    static readonly ISet<(string, string)> ExcludedTraitConditions =
+        new HashSet<(string, string)>();
+    private static bool Help { get; set; }= false;
+
     int ExitCode { get; set; } = 0;
 
     void Start()
@@ -21,11 +71,53 @@ public class EntryPoint : MonoBehaviour
             return;
         }
 
-        IEnumerable<string> assemblyPaths = Environment.GetCommandLineArgs().Skip(1);
+        string[] commandLineArgs = Environment.GetCommandLineArgs();
+        string programName = Path.GetFileName(commandLineArgs[0]);
+        IEnumerable<string> args = commandLineArgs.Skip(1);
+        IList<string> assemblyPaths;
+        try
+        {
+            assemblyPaths = Options.Parse(args);
+        }
+        catch (OptionException e)
+        {
+            Console.Error.WriteLine("Error: {0}", e.Message);
+            Console.Error.WriteLine(
+                "Try `{0} --help' for more information",
+                programName
+            );
+            Application.Quit(1);
+            return;
+        }
+
+        foreach (string path in assemblyPaths)
+        {
+            if (!Path.IsPathRooted(path))
+            {
+                Console.Error.WriteLine(
+                    "Error: An assembly path should be absolute: `{0}'.",
+                    path
+                );
+                Application.Quit(1);
+                return;
+            }
+        }
+
+        if (Help)
+        {
+            Console.WriteLine(
+                "Usage: {0} [options] ASSEMBLY [ASSEMBLY...]",
+                programName
+            );
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Options.WriteOptionDescriptions(Console.Out);
+            return;
+        }
 
         void run(string path)
         {
-            Console.WriteLine("Running tests in {0}...", path);
+            Console.Error.WriteLine("Discovering tests in {0}...", path);
             try
             {
                 var messageSink = new MessageSink
@@ -48,15 +140,21 @@ public class EntryPoint : MonoBehaviour
                     discoveryOptions.SetSynchronousMessageReporting(true);
                     controller.Find(false, messageSink, discoveryOptions);
                     messageSink.DiscoveryCompletionWaitHandle.WaitOne();
-                    Console.WriteLine(
+                    ITestCase[] testCases =
+                        FilterTestCases(messageSink.TestCases).ToArray();
+                    Console.Error.WriteLine(
                         "{0} test cases were found in {1}.",
-                        messageSink.TestCases.Count,
+                        testCases.Length,
                         path
                     );
                     ITestFrameworkExecutionOptions executionOptions =
                         TestFrameworkOptions.ForExecution(configuration);
                     executionOptions.SetSynchronousMessageReporting(true);
-                    controller.RunTests(messageSink.TestCases, messageSink, executionOptions);
+                    controller.RunTests(
+                        testCases,
+                        messageSink,
+                        executionOptions
+                    );
                     messageSink.ExecutionCompletionWaitHandle.WaitOne();
                 }
             }
@@ -66,7 +164,7 @@ public class EntryPoint : MonoBehaviour
                 Console.Error.WriteLine(e.StackTrace);
                 ExitCode = 1;
             }
-            Console.WriteLine("All tests in {0} ran.", path);
+            Console.Error.WriteLine("All tests in {0} ran.", path);
         }
 
         IEnumerator wait(string[] paths)
@@ -86,6 +184,20 @@ public class EntryPoint : MonoBehaviour
 
         StartCoroutine(wait(assemblyPaths.ToArray()));
     }
+
+    static IEnumerable<ITestCase> FilterTestCases(IList<ITestCase> testCases) =>
+        testCases.Where(t =>
+        {
+            ITestMethod method = t.TestMethod;
+            string className = method.TestClass.Class.Name;
+            string methodName = $"{className}.{method.Method.Name}";
+            return !ExcludedClasses.Contains(className) &&
+                !ExcludedMethods.Contains(methodName) &&
+                !ExcludedTraitConditions.Any(pair =>
+                    t.Traits.ContainsKey(pair.Item1) &&
+                    t.Traits[pair.Item1].Contains(pair.Item2)
+                );
+        });
 
     private void OnTest(TestInfo info)
     {
@@ -126,6 +238,5 @@ public class EntryPoint : MonoBehaviour
 
     void Update()
     {
-        
     }
 }

@@ -7,7 +7,21 @@ from stable [Mono].
 
 You can download the executable binaries from the [releases] page.
 
-This program takes one or more *.dll* files and run tests in them.
+This program takes one or more *.dll* files and run tests in them, e.g.:
+
+~~~~ bash
+./StandaloneLinux64 YourTests.dll
+~~~~
+
+~~~~ pwsh
+StandaloneWindows64.exe YourTests.dll
+~~~~
+
+It also takes several options like `-C`/`--exclude-class` and
+`-T`/`--exclude-trait-condition`.  See `--help` for details.
+
+Note that *.dll* files to test should target on .NET Framework (e.g., `net461`),
+not .NET Core.
 
 [xUnit.net]: https://xunit.net/
 [Unity]: https://xunit.net/
