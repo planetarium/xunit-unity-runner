@@ -20,6 +20,13 @@ StandaloneWindows64.exe YourTests.dll
 It also takes several options like `-C`/`--exclude-class` and
 `-T`/`--exclude-trait-condition`.  See `--help` for details.
 
+On macOS you need to invoke the actual executable binary in
+*StandardOSX.app/Contents/MacOS/* directory, e.g.:
+
+~~~~ bash
+StandaloneOSX.app/Contents/MacOS/StandardOSX YourTests.dll
+~~~~
+
 Note that *.dll* files to test should target on .NET Framework (e.g., `net461`),
 not .NET Core.
 

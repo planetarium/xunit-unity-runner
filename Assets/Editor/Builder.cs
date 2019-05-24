@@ -12,7 +12,7 @@ public class Builder
                 new[] {"Assets/Scenes/SampleScene.unity"},
                 $"Builds/{target.ToString()}/{target.ToString()}",
                 target,
-                BuildOptions.None
+                BuildOptions.EnableHeadlessMode
             );
         }
         catch (Exception e)
