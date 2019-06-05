@@ -71,6 +71,15 @@ public class EntryPoint : MonoBehaviour
             return;
         }
 
+        int? exitCode = Main();
+        if (exitCode is int code)
+        {
+            Application.Quit(code);
+        }
+    }
+
+    int? Main()
+    {
         string[] commandLineArgs = Environment.GetCommandLineArgs();
         string programName = Path.GetFileName(commandLineArgs[0]);
         IEnumerable<string> args = commandLineArgs.Skip(1);
@@ -86,8 +95,7 @@ public class EntryPoint : MonoBehaviour
                 "Try `{0} --help' for more information",
                 programName
             );
-            Application.Quit(1);
-            return;
+            return 1;
         }
 
         foreach (string path in assemblyPaths)
@@ -98,8 +106,7 @@ public class EntryPoint : MonoBehaviour
                     "Error: An assembly path should be absolute: `{0}'.",
                     path
                 );
-                Application.Quit(1);
-                return;
+                return 1;
             }
         }
 
@@ -112,7 +119,7 @@ public class EntryPoint : MonoBehaviour
             Console.WriteLine();
             Console.WriteLine("Options:");
             Options.WriteOptionDescriptions(Console.Out);
-            return;
+            return 0;
         }
 
         void run(string path)
@@ -183,6 +190,7 @@ public class EntryPoint : MonoBehaviour
         }
 
         StartCoroutine(wait(assemblyPaths.ToArray()));
+        return null;
     }
 
     static IEnumerable<ITestCase> FilterTestCases(IList<ITestCase> testCases) =>
