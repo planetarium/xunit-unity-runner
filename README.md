@@ -34,3 +34,21 @@ not .NET Core.
 [Unity]: https://xunit.net/
 [Mono]: https://www.mono-project.com/
 [releases]: https://github.com/planetarium/xunit-unity-runner/releases
+
+
+FAQ
+---
+
+### I got `Magic number is wrong: 542` error.  I'm on Linux.
+
+If the `TERM` environment variable is not set or it's a value unsupported by
+Mono (e.g., `xterm-256color`) yet Unity player's built-in Mono runtime could
+throw such an exception.  You could work around this by setting it `xterm`:
+
+~~~~ bash
+TERM=xterm ./StandaloneLinux64 YourTests.dll
+~~~~
+
+See also the related issue on the Mono project:
+
+<https://github.com/mono/mono/issues/6752>
