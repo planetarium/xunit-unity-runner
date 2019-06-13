@@ -145,6 +145,7 @@ public class EntryPoint : MonoBehaviour
                     ITestFrameworkDiscoveryOptions discoveryOptions =
                         TestFrameworkOptions.ForDiscovery(configuration);
                     discoveryOptions.SetSynchronousMessageReporting(true);
+                    discoveryOptions.SetPreEnumerateTheories(false);
                     controller.Find(false, messageSink, discoveryOptions);
                     messageSink.DiscoveryCompletionWaitHandle.WaitOne();
                     ITestCase[] testCases =
