@@ -71,14 +71,14 @@ public class EntryPoint : MonoBehaviour
             return;
         }
 
-        int? exitCode = Main();
+        int? exitCode = RunTests();
         if (exitCode is int code)
         {
             Application.Quit(code);
         }
     }
 
-    int? Main()
+    int? RunTests()
     {
         string[] commandLineArgs = Environment.GetCommandLineArgs();
         string programName = Path.GetFileName(commandLineArgs[0]);
