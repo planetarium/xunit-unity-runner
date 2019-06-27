@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Mono.Options;
 using UnityEngine;
@@ -66,6 +65,11 @@ public class EntryPoint : MonoBehaviour
                 ExcludedTraitConditions.Add(ParseTraitCondition(traitCondition))
         },
         {
+            "d|debug",
+            "Print debug logs.",
+            debug => DebugLog = !(debug is null)
+        },
+        {
             "h|help",
             "Show this message and exit.",
             help => Help = !(help is null)
@@ -81,6 +85,7 @@ public class EntryPoint : MonoBehaviour
     static readonly ISet<string> SelectedMethods = new HashSet<string>();
     static readonly ISet<(string, string)> SelectedTraitConditions =
         new HashSet<(string, string)>();
+    private static bool DebugLog { get; set; }= false;
     private static bool Help { get; set; }= false;
 
     private static (string, string) ParseTraitCondition( string traitCondition)
@@ -167,6 +172,7 @@ public class EntryPoint : MonoBehaviour
                 {
                     OnTest = OnTest,
                     OnExecutionComplete = OnExecutionComplete,
+                    LogWriter = DebugLog ? Console.Error : null,
                 };
                 using (
                     var controller = new XunitFrontController(

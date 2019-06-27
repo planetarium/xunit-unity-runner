@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Xunit;
@@ -15,13 +16,18 @@ public class MessageSink : IMessageSinkWithTypes
     public Action<ExecutionCompleteInfo> OnExecutionComplete { get; set; } = null;
     public EventWaitHandle ExecutionCompletionWaitHandle { get; } =
         new EventWaitHandle(false, EventResetMode.ManualReset);
+    public TextWriter LogWriter { get; set; }
 
     public bool OnMessageWithTypes(IMessageSinkMessage message, HashSet<string> messageTypes)
     {
         switch (message)
         {
             case ITestCaseDiscoveryMessage m:
-                TestCases.Add(m.TestCase);
+                foreach (ITestCase testCase in m.TestCases)
+                {
+                    LogWriter?.WriteLine("Discovered: {0}", testCase.DisplayName);
+                    TestCases.Add(testCase);
+                }
                 break;
 
             case IDiscoveryCompleteMessage _:
@@ -82,6 +88,10 @@ public class MessageSink : IMessageSinkWithTypes
                     )
                 );
                 ExecutionCompletionWaitHandle.Set();
+                break;
+
+            default:
+                LogWriter?.WriteLine("Received message: {0}", message);
                 break;
         }
 
