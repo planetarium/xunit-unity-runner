@@ -16,37 +16,54 @@ public class EntryPoint : MonoBehaviour
     private static readonly OptionSet Options = new OptionSet
     {
         {
+            "c|select-class=",
+            "Select a test class by its fully qualified name, and exclude " +
+            "other classes.  This option can be used multiple times, and " +
+            "all specified classes (and others selected by -m/--select-method " +
+            "and -t/--select-trait-condition options) are included together.",
+            className => SelectedClasses.Add(className)
+        },
+        {
+            "m|select-method=",
+            "Select a test method by its fully qualified name, and exclude " +
+            "other methods.  This option can be used multiple times, and " +
+            "all specified methods (and others selected by -c/--select-class " +
+            "and -t/--select-trait-condition options) are included together.",
+            method => SelectedMethods.Add(method)
+        },
+        {
+            "t|select-trait-condition=",
+            "Select a trait condition (e.g., `-T TraitName=value') and exclude " +
+            "others.  This option can be used multiple times, and " +
+            "all specified methods (and others selected by -c/--select-class " +
+            "and -m/--select-method options) are included together.",
+            traitCondition =>
+                SelectedTraitConditions.Add(ParseTraitCondition(traitCondition))
+        },
+        {
             "C|exclude-class=",
             "Exclude a test class by its fully qualified name.  " +
-            "This option can be used multiple times.",
+            "This option can be used multiple times.  " +
+            "Prior to -c/--select-class, -m/--select-method, and " +
+            "-t/--select-trait-condition options.",
             className => ExcludedClasses.Add(className)
         },
         {
             "M|exclude-method=",
             "Exclude a test method by its fully qualified name.  " +
-            "This option can be used multiple times.",
+            "This option can be used multiple times.  " +
+            "Prior to -c/--select-class, -m/--select-method, and " +
+            "-t/--select-trait-condition options.",
             method => ExcludedMethods.Add(method)
         },
         {
             "T|exclude-trait-condition=",
             "Exclude a trait condition (e.g., `-T TraitName=value').  " +
-            "This option can be used multiple times.",
+            "This option can be used multiple times.  " +
+            "Prior to -c/--select-class, -m/--select-method, and " +
+            "-t/--select-trait-condition options.",
             traitCondition =>
-            {
-                int equal = traitCondition.IndexOf('=');
-                string traitName, value;
-                if (equal < 0)
-                {
-                    traitName = traitCondition;
-                    value = string.Empty;
-                }
-                else
-                {
-                    traitName = traitCondition.Substring(0, equal);
-                    value = traitCondition.Substring(equal + 1);
-                }
-                ExcludedTraitConditions.Add((traitName, value));
-            }
+                ExcludedTraitConditions.Add(ParseTraitCondition(traitCondition))
         },
         {
             "h|help",
@@ -59,7 +76,26 @@ public class EntryPoint : MonoBehaviour
     static readonly ISet<string> ExcludedMethods = new HashSet<string>();
     static readonly ISet<(string, string)> ExcludedTraitConditions =
         new HashSet<(string, string)>();
+
+    static readonly ISet<string> SelectedClasses = new HashSet<string>();
+    static readonly ISet<string> SelectedMethods = new HashSet<string>();
+    static readonly ISet<(string, string)> SelectedTraitConditions =
+        new HashSet<(string, string)>();
     private static bool Help { get; set; }= false;
+
+    private static (string, string) ParseTraitCondition( string traitCondition)
+    {
+            int equal = traitCondition.IndexOf('=');
+            if (equal < 0)
+            {
+                return (traitCondition, string.Empty);
+            }
+
+            return (
+                traitCondition.Substring(0, equal),
+                traitCondition.Substring(equal + 1)
+            );
+    }
 
     int ExitCode { get; set; } = 0;
 
@@ -200,12 +236,25 @@ public class EntryPoint : MonoBehaviour
             ITestMethod method = t.TestMethod;
             string className = method.TestClass.Class.Name;
             string methodName = $"{className}.{method.Method.Name}";
-            return !ExcludedClasses.Contains(className) &&
+            bool selected = true;
+
+            bool IsSatisfied((string, string) pair) =>
+                t.Traits.ContainsKey(pair.Item1) &&
+                t.Traits[pair.Item1].Contains(pair.Item2);
+
+            if (SelectedClasses.Any() ||
+                SelectedMethods.Any() ||
+                SelectedTraitConditions.Any())
+            {
+                selected =
+                    SelectedClasses.Contains(className) ||
+                    SelectedMethods.Contains(methodName) ||
+                    SelectedTraitConditions.Any(IsSatisfied);
+            }
+
+            return selected && !ExcludedClasses.Contains(className) &&
                 !ExcludedMethods.Contains(methodName) &&
-                !ExcludedTraitConditions.Any(pair =>
-                    t.Traits.ContainsKey(pair.Item1) &&
-                    t.Traits[pair.Item1].Contains(pair.Item2)
-                );
+                !ExcludedTraitConditions.Any(IsSatisfied);
         });
 
     private void OnTest(TestInfo info)
