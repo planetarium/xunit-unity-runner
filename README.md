@@ -7,24 +7,25 @@ from stable [Mono].
 
 You can download the executable binaries from the [releases] page.
 
-This program takes one or more *.dll* files and run tests in them, e.g.:
+This program takes one or more *absolute* paths to .NET assembly files (*.dll*)
+and run tests in them, e.g.:
 
 ~~~~ bash
-./StandaloneLinux64 YourTests.dll
+./StandaloneLinux64 "$(pwd)"/YourTests.dll
 ~~~~
 
 ~~~~ pwsh
-StandaloneWindows64.exe YourTests.dll
+StandaloneWindows64.exe C:\path\to\YourTests.dll
 ~~~~
 
-It also takes several options like `-C`/`--exclude-class` and
+It also takes several options like `-c`/`--select-class` and
 `-T`/`--exclude-trait-condition`.  See `--help` for details.
 
 On macOS you need to invoke the actual executable binary in
 *StandardOSX.app/Contents/MacOS/* directory, e.g.:
 
 ~~~~ bash
-StandaloneOSX.app/Contents/MacOS/StandardOSX YourTests.dll
+StandaloneOSX.app/Contents/MacOS/StandardOSX "$(pwd)"/YourTests.dll
 ~~~~
 
 Note that *.dll* files to test should target on .NET Framework (e.g., `net461`),
@@ -46,7 +47,7 @@ Mono (e.g., `xterm-256color`) yet Unity player's built-in Mono runtime could
 throw such an exception.  You could work around this by setting it `xterm`:
 
 ~~~~ bash
-TERM=xterm ./StandaloneLinux64 YourTests.dll
+TERM=xterm ./StandaloneLinux64 "$(pwd)"/YourTests.dll
 ~~~~
 
 See also the related issue on the Mono project:
