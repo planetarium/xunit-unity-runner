@@ -1,0 +1,24 @@
+on: push
+name: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: build
+      uses: docker://gableroux/unity3d:2019.1.0f2
+      env:
+        TARGETS: StandaloneLinux64 StandaloneOSX StandaloneWindows64
+        ULF: ${{ secrets.ULF }}
+      with:
+        entrypoint: ./build.sh
+    - name: tag-filter
+      uses: actions/bin/filter@master
+      with:
+        args: tag
+    - name: release
+      uses: docker://alpine:3.9
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        entrypoint: ./release.sh
