@@ -1,4 +1,8 @@
-on: push
+on:
+  push:
+    tags:
+    - '*'
+
 name: push
 jobs:
   build:
@@ -12,10 +16,6 @@ jobs:
         ULF: ${{ secrets.ULF }}
       with:
         entrypoint: ./build.sh
-    - name: tag-filter
-      uses: actions/bin/filter@master
-      with:
-        args: tag
     - name: release
       uses: docker://alpine:3.9
       env:
