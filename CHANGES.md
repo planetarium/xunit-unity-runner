@@ -4,6 +4,8 @@ xUnit.net Unity Runner Changelog
 Version 0.2.5
 -------------
 
+Released on June 3, 2021.
+
  -  Added detailed log output for failed tests.  [[#6]]
 
 [#6]: https://github.com/planetarium/xunit-unity-runner/pull/6
@@ -48,7 +50,7 @@ Version 0.2.1
 
 Released on June 5, 2019.
 
- - Improved the way to terminate the test runner process in order to finish 
+ - Improved the way to terminate the test runner process in order to finish
    tests gracefully.
 
 
