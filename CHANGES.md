@@ -4,7 +4,9 @@ xUnit.net Unity Runner Changelog
 Version 0.2.5
 -------------
 
-To be released.
+ -  Added detailed log output for failed tests.  [[#6]]
+
+[#6]: https://github.com/planetarium/xunit-unity-runner/pull/6
 
 
 Version 0.2.4

@@ -273,12 +273,13 @@ public class EntryPoint : MonoBehaviour
 
             case TestFailedInfo i:
                 Console.WriteLine(
-                    "FAIL {0}: {1:}s\n  {2}: {3}\n  {4}",
+                    "FAIL {0}: {1:}s\n  {2}: {3}\n  {4}\n\nOutput:\n{5}",
                     i.TestDisplayName,
                     i.ExecutionTime,
                     i.ExceptionType,
                     string.Join("\n  ", i.ExceptionMessage.Split('\n')),
-                    string.Join("\n  ", i.ExceptionStackTrace.Split('\n'))
+                    string.Join("\n  ", i.ExceptionStackTrace.Split('\n')),
+                    i.Output.Replace("\n", "\n  ")
                 );
                 return;
 
