@@ -1,0 +1,23 @@
+name: activate
+on:
+  workflow_dispatch: {}
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: dahlia/actions/setup-yq@main
+    - id: get-project-version
+      run: |
+        yq e \
+          '"::set-output name=version::" + .m_EditorVersion' \
+          ProjectSettings/ProjectVersion.txt
+    - id: get-license-file
+      uses: game-ci/unity-request-activation-file@v2
+      with:
+        unityVersion: ${{ steps.get-project-version.outputs.version }}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ steps.get-license-file.outputs.filePath }}
+        path: ${{ steps.get-license-file.outputs.filePath }}

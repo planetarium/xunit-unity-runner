@@ -9,7 +9,8 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Dd]ist/
-/[Mm]emoryCaptures/
+/[Mm]emory[Cc]aptures/
+/[Uu]ser[Ss]ettings/
 
 # Never ignore Asset meta data
 !/[Aa]ssets/**/*.meta
@@ -25,6 +26,9 @@
 
 # Visual Studio cache directory
 .vs/
+
+# Rider
+.idea/
 
 # Gradle cache directory
 .gradle/
@@ -63,4 +67,6 @@ sysinfo.txt
 crashlytics-build.properties
 
 # Unity License
+alf/
+*.alf
 *.ulf

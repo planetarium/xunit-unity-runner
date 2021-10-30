@@ -1,24 +1,57 @@
-on:
-  push:
-    tags:
-    - '*'
+on: [push, pull_request]
 
 name: push
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+        - StandaloneLinux64
+        - StandaloneOSX
+        - StandaloneWindows64
     steps:
-    - uses: actions/checkout@master
-    - name: build
-      uses: docker://gableroux/unity3d:2019.1.0f2
-      env:
-        TARGETS: StandaloneLinux64 StandaloneOSX StandaloneWindows64
-        ULF: ${{ secrets.ULF }}
+    - uses: actions/checkout@v2
+    - uses: actions/cache@v2
       with:
-        entrypoint: ./build.sh
-    - name: release
-      uses: docker://alpine:3.9
+        path: Library
+        key: Library-${{ matrix.target }}
+        restore-keys: Library-
+    - uses: game-ci/unity-builder@v2
+      with:
+        targetPlatform: ${{ matrix.target }}
+        buildsPath: build/
+        versioning: Tag
+        buildMethod: Builder.Build
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+    - run: |
+        mkdir -p /tmp/dist
+        pushd "build/${{ matrix.target }}/"
+        tar cvfj "/tmp/dist/${{ matrix.target }}.tar.bz2" ./*
+        popd
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.target }}
+        path: /tmp/dist/${{ matrix.target }}.tar.bz2
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v2
+      with:
+        name: StandaloneLinux64
+        path: Dist/
+    - uses: actions/download-artifact@v2
+      with:
+        name: StandaloneOSX
+        path: Dist/
+    - uses: actions/download-artifact@v2
+      with:
+        name: StandaloneWindows64
+        path: Dist/
+    - run: ./release.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        entrypoint: ./release.sh
