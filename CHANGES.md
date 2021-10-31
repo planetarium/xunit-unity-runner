@@ -4,7 +4,7 @@ xUnit.net Unity Runner Changelog
 Version 0.3.0
 -------------
 
-To be released.
+Released on October 31, 2021.
 
  -  Upgraded Unity Editor from 2019.1.0f2 to 2020.3.4f1.
  -  Added `-x`/`--report-xml-path` option.
