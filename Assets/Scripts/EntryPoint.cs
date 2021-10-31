@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Mono.Options;
 using UnityEngine;
 using Xunit;
@@ -65,6 +66,11 @@ public class EntryPoint : MonoBehaviour
                 ExcludedTraitConditions.Add(ParseTraitCondition(traitCondition))
         },
         {
+            "x|report-xml-path=",
+            "The file path to write a result report in xUnit.net v2 XML format.",
+            reportXmlPath => ReportXmlPath = reportXmlPath
+        },
+        {
             "d|debug",
             "Print debug logs.",
             debug => DebugLog = !(debug is null)
@@ -85,21 +91,23 @@ public class EntryPoint : MonoBehaviour
     static readonly ISet<string> SelectedMethods = new HashSet<string>();
     static readonly ISet<(string, string)> SelectedTraitConditions =
         new HashSet<(string, string)>();
+
+    private static string ReportXmlPath { get; set; } = null;
     private static bool DebugLog { get; set; }= false;
     private static bool Help { get; set; }= false;
 
     private static (string, string) ParseTraitCondition( string traitCondition)
     {
-            int equal = traitCondition.IndexOf('=');
-            if (equal < 0)
-            {
-                return (traitCondition, string.Empty);
-            }
+        int equal = traitCondition.IndexOf('=');
+        if (equal < 0)
+        {
+            return (traitCondition, string.Empty);
+        }
 
-            return (
-                traitCondition.Substring(0, equal),
-                traitCondition.Substring(equal + 1)
-            );
+        return (
+            traitCondition.Substring(0, equal),
+            traitCondition.Substring(equal + 1)
+        );
     }
 
     int ExitCode { get; set; } = 0;
@@ -163,9 +171,10 @@ public class EntryPoint : MonoBehaviour
             return 0;
         }
 
-        void run(string path)
+        XElement run(string path)
         {
             Console.Error.WriteLine("Discovering tests in {0}...", path);
+            XElement assemblyElement = new XElement("assembly");
             try
             {
                 var messageSink = new MessageSink
@@ -174,6 +183,8 @@ public class EntryPoint : MonoBehaviour
                     OnExecutionComplete = OnExecutionComplete,
                     LogWriter = DebugLog ? Console.Error : null,
                 };
+                var summarySink = new DelegatingExecutionSummarySink(messageSink);
+                using (var sink = new DelegatingXmlCreationSink(summarySink, assemblyElement))
                 using (
                     var controller = new XunitFrontController(
                         AppDomainSupport.Denied,
@@ -202,7 +213,7 @@ public class EntryPoint : MonoBehaviour
                     executionOptions.SetSynchronousMessageReporting(true);
                     controller.RunTests(
                         testCases,
-                        messageSink,
+                        sink,
                         executionOptions
                     );
                     messageSink.ExecutionCompletionWaitHandle.WaitOne();
@@ -215,11 +226,13 @@ public class EntryPoint : MonoBehaviour
                 ExitCode = 1;
             }
             Console.Error.WriteLine("All tests in {0} ran.", path);
+            return assemblyElement;
         }
 
         IEnumerator wait(string[] paths)
         {
-            Console.WriteLine("Run {0} test assemblies.", paths.Length);
+            Console.Error.WriteLine("Run {0} test assemblies.", paths.Length);
+            var assembliesElement = new XElement("assemblies");
             foreach (string path in paths)
             {
                 var task = Task.Run(() => run(path));
@@ -227,6 +240,14 @@ public class EntryPoint : MonoBehaviour
                 {
                     yield return new WaitUntil(() => task.IsCompleted);
                 }
+                assembliesElement.Add(task.Result);
+            }
+
+            if (ReportXmlPath is string reportXmlPath)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(reportXmlPath));
+                assembliesElement.Save(reportXmlPath);
+                Console.Error.Write("The result report is written: {0}", reportXmlPath);
             }
 
             Application.Quit(ExitCode);

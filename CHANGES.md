@@ -7,6 +7,7 @@ Version 0.3.0
 To be released.
 
  -  Upgraded Unity Editor from 2019.1.0f2 to 2020.3.4f1.
+ -  Added `-x`/`--report-xml-path` option.
  -  Fixed a bug that executables in distributions for Windows had lacked
     the suffix *.exe*.
 
