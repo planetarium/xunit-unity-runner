@@ -1,6 +1,15 @@
 xUnit.net Unity Runner Changelog
 ================================
 
+Version 0.4.0
+-------------
+
+To be released.
+
+ -  Added `-D`/`--distributed` option for distributed exccution.
+ -  Added `-s`/`--distributed-seed` option for distributed exccution.
+
+
 Version 0.3.1
 -------------
 

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Mono.Options;
@@ -10,6 +11,7 @@ using UnityEngine;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Runners;
+using Random = System.Random;
 
 public class EntryPoint : MonoBehaviour
 {
@@ -66,6 +68,73 @@ public class EntryPoint : MonoBehaviour
                 ExcludedTraitConditions.Add(ParseTraitCondition(traitCondition))
         },
         {
+            "D|distributed=",
+            "Run only randomly selected tests out of the all discovered " +
+            "tests.  This is intended to be used as a single node out of " +
+            "multiple distributed nodes in parallel.  The format is N/M, " +
+            "where N is the zero-indexed node number, and M is the total " +
+            "number of distributed nodes to run tests in parallel.  " +
+            "For example, the option --distributed=2/5 implies there are " +
+            "5 nodes to run the same set of tests, and this is third one " +
+            "of these nodes.  You can optionally provide " +
+            "-s/--distributed-seed option to manually configure the shared " +
+            "seed among distributed nodes.",
+            d =>
+            {
+                Match m = Regex.Match(d, @"^\s*(-?\d+)\s*/\s*(-?\d+)\s*$");
+                if (!m.Success)
+                {
+                    throw new OptionException(
+                        "Expected a fraction, i.e., N/M where N is the zero-" +
+                        "indexed node number, and M is the total number of " +
+                        "distributed nodes.  See -h/--help for details.",
+                        "-D/--distributed");
+                }
+
+                var current = int.Parse(m.Groups[1].Value);
+                int total = int.Parse(m.Groups[2].Value);
+                if (current < 0)
+                {
+                    throw new OptionException(
+                        "The current node number cannot be less than zero.",
+                        "-D/--distributed"
+                    );
+                }
+                else if (total < 1)
+                {
+                    throw new OptionException(
+                        "The total number must be greater than zero.",
+                        "-D/--distributed"
+                    );
+                }
+                else if (current >= total)
+                {
+                    throw new OptionException(
+                        "The current node number must less be than the total " +
+                        "number." + (current == total
+                            ? "\nHint: The current node number is zero-indexed."
+                            : string.Empty),
+                        "-D/--distributed"
+                    );
+                }
+
+                CurrentNode = current;
+                DistributedNodes = total;
+            }
+        },
+        {
+            "s|distributed-seed=",
+            "(Only sensible together with -d/--distributed option.)  " +
+            "The seed value in integer to be used to randomly and uniquely " +
+            "distribute the equal set of tests to the nodes.  " +
+            $"{DistributedSeed} by default.",
+            seed => DistributedSeed = Int32.TryParse(seed, out int s)
+                ? s
+                : throw new OptionException(
+                    "Expected an integer.",
+                    "-s/--distributed-seed")
+        },
+        {
             "x|report-xml-path=",
             "The file path to write a result report in xUnit.net v2 XML format.",
             reportXmlPath => ReportXmlPath = reportXmlPath
@@ -91,6 +160,10 @@ public class EntryPoint : MonoBehaviour
     static readonly ISet<string> SelectedMethods = new HashSet<string>();
     static readonly ISet<(string, string)> SelectedTraitConditions =
         new HashSet<(string, string)>();
+
+    private static int CurrentNode { get; set; } = 0;
+    private static int DistributedNodes { get; set; } = 0;
+    private static int DistributedSeed { get; set; } = 0;
 
     private static string ReportXmlPath { get; set; } = null;
     private static bool DebugLog { get; set; }= false;
@@ -173,7 +246,8 @@ public class EntryPoint : MonoBehaviour
 
         if (SelectedClasses.Any() || SelectedMethods.Any() ||
             SelectedTraitConditions.Any() || ExcludedClasses.Any() ||
-            ExcludedMethods.Any() || ExcludedTraitConditions.Any())
+            ExcludedMethods.Any() || ExcludedTraitConditions.Any() ||
+            DistributedNodes > 0)
         {
             Console.Error.WriteLine("Applied filters:");
             PrintFilters("Selected classes", SelectedClasses);
@@ -182,6 +256,11 @@ public class EntryPoint : MonoBehaviour
             PrintFilters("Excluded classes", ExcludedClasses);
             PrintFilters("Excluded methods", ExcludedMethods);
             PrintFilters("Excluded traits", ExcludedTraitConditions);
+            Console.Error.WriteLine(
+                "  Current node: {0}/{1}",
+                CurrentNode,
+                DistributedNodes
+            );
         }
         else
         {
@@ -274,8 +353,9 @@ public class EntryPoint : MonoBehaviour
         return null;
     }
 
-    static IEnumerable<ITestCase> FilterTestCases(IList<ITestCase> testCases) =>
-        testCases.Where(t =>
+    static IEnumerable<ITestCase> FilterTestCases(IList<ITestCase> testCases)
+    {
+        IEnumerable<ITestCase> filtered = testCases.Where(t =>
         {
             ITestMethod method = t.TestMethod;
             string className = method.TestClass.Class.Name;
@@ -300,6 +380,26 @@ public class EntryPoint : MonoBehaviour
                 !ExcludedMethods.Contains(methodName) &&
                 !ExcludedTraitConditions.Any(IsSatisfied);
         });
+
+        if (DistributedNodes > 0)
+        {
+            ITestCase[] tests = filtered.ToArray();
+            var window = (int)Math.Ceiling(tests.Length / (double)DistributedNodes);
+            var random = new Random(DistributedSeed);
+            filtered = tests
+                .OrderBy(t => t.UniqueID, StringComparer.InvariantCulture)
+                .Select(t => (t, random.Next()))
+                .OrderBy(pair => pair.Item2)
+                .Select(pair => pair.Item1)
+                .Skip(CurrentNode * window)
+                .Take(window)
+                .OrderBy(t =>
+                    (t.TestMethod.TestClass.Class.Assembly.Name, t.DisplayName)
+                );
+        }
+
+        return filtered;
+    }
 
     private void OnTest(TestInfo info)
     {

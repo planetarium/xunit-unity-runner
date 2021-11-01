@@ -37,6 +37,32 @@ not .NET Core.
 [releases]: https://github.com/planetarium/xunit-unity-runner/releases
 
 
+CircleCI-style parallelism[^1]
+------------------------------
+
+There are two options for running tests in distributed nodes:
+`-D`/`--distributed` and `-s`/`--distributed-seed`.  The former option takes
+an argument in the `N/M` format, where `N` is the current node's zero-indexed
+number and `M` is the total number of distributed nodes.  This option selects
+the subset of the test cases[^2] for the current node, and this guarantees
+two different nodes never run the same test case, which is redundant.
+
+For example, the following options make the test execution to take advantage
+of CircleCI's parallelism:
+
+~~~~ bash
+--distributed=$CIRCLE_NODE_INDEX/$CIRCLE_NODE_TOTAL \
+--distributed-seed=$CIRCLE_BUILD_NUM
+~~~~
+
+
+[^1]: See also CircleCI's related docs: [*Running Tests in Parallel*][1].
+[^2]: Before a subset is selected, all test filters are applied first.
+      Therefore, all distributed nodes have to apply the same set of filters.
+
+[1]: https://circleci.com/docs/2.0/parallelism-faster-jobs/
+
+
 FAQ
 ---
 
