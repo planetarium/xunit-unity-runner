@@ -25,7 +25,7 @@ On macOS you need to invoke the actual executable binary in
 *StandardOSX.app/Contents/MacOS/* directory, e.g.:
 
 ~~~~ bash
-StandaloneOSX.app/Contents/MacOS/StandardOSX "$(pwd)"/YourTests.dll
+StandaloneOSX.app/Contents/MacOS/unity-xunit "$(pwd)"/YourTests.dll
 ~~~~
 
 Note that *.dll* files to test should target on .NET Framework (e.g., `net461`),
