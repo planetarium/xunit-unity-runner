@@ -1,6 +1,12 @@
 xUnit.net Unity Runner Changelog
 ================================
 
+Version 0.3.1
+-------------
+
+ -  Fixed a build bug that the runner had hanged and started running tests.
+
+
 Version 0.3.0
 -------------
 

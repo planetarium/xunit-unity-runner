@@ -133,14 +133,12 @@ public class Builder
 
     private static void Build(BuildTarget buildTarget, string filePath)
     {
-        string[] scenes = EditorBuildSettings.scenes.Where(scene => scene.enabled)
-            .Select(s => s.path).ToArray();
         var buildPlayerOptions = new BuildPlayerOptions
         {
-            scenes = scenes,
+            scenes = new[] { "Assets/Scenes/MainScene.unity" },
             target = buildTarget,
             locationPathName = filePath,
-            options = BuildOptions.EnableHeadlessMode
+            options = BuildOptions.EnableHeadlessMode,
         };
 
         BuildSummary buildSummary = BuildPipeline.BuildPlayer(buildPlayerOptions).summary;
