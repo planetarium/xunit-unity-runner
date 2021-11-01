@@ -171,6 +171,23 @@ public class EntryPoint : MonoBehaviour
             return 0;
         }
 
+        if (SelectedClasses.Any() || SelectedMethods.Any() ||
+            SelectedTraitConditions.Any() || ExcludedClasses.Any() ||
+            ExcludedMethods.Any() || ExcludedTraitConditions.Any())
+        {
+            Console.Error.WriteLine("Applied filters:");
+            PrintFilters("Selected classes", SelectedClasses);
+            PrintFilters("Selected methods", SelectedMethods);
+            PrintFilters("Selected traits", SelectedTraitConditions);
+            PrintFilters("Excluded classes", ExcludedClasses);
+            PrintFilters("Excluded methods", ExcludedMethods);
+            PrintFilters("Excluded traits", ExcludedTraitConditions);
+        }
+        else
+        {
+            Console.Error.WriteLine("Applied no filters.");
+        }
+
         XElement run(string path)
         {
             Console.Error.WriteLine("Discovering tests in {0}...", path);
@@ -320,6 +337,38 @@ public class EntryPoint : MonoBehaviour
         {
             ExitCode = 1;
         }
+    }
+
+    private void PrintFilters(string label, ISet<string> filters)
+    {
+        if (!filters.Any())
+        {
+            return;
+        }
+
+        Console.Error.WriteLine("  {0}:", label);
+        foreach (string f in filters.OrderBy(s => s))
+        {
+            Console.Error.WriteLine("  - {0}", f);
+        }
+
+        Console.Error.Flush();
+    }
+
+    private void PrintFilters(string label, ISet<(string, string)> filters)
+    {
+        if (!filters.Any())
+        {
+            return;
+        }
+
+        Console.Error.WriteLine("  {0}:", label);
+        foreach ((string f, string v) in filters.OrderBy(pair => pair.Item1))
+        {
+            Console.Error.WriteLine("  - {0}: {1}", f, v);
+        }
+
+        Console.Error.Flush();
     }
 
     void Update()

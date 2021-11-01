@@ -5,6 +5,8 @@ Version 0.3.1
 -------------
 
  -  Fixed a build bug that the runner had hanged and started running tests.
+ -  Applied filters became printed to the standard error for easier
+    troubleshooting.
 
 
 Version 0.3.0
