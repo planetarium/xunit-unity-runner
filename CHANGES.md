@@ -4,7 +4,7 @@ xUnit.net Unity Runner Changelog
 Version 0.4.0
 -------------
 
-To be released.
+Released on November 1, 2021.
 
  -  Added `-D`/`--distributed` option for distributed exccution.
  -  Added `-s`/`--distributed-seed` option for distributed exccution.
