@@ -140,6 +140,12 @@ public class EntryPoint : MonoBehaviour
             reportXmlPath => ReportXmlPath = reportXmlPath
         },
         {
+            "dry-run",
+            "Do not run tests, but only discover tests.  More useful with" +
+            "-d/--debug option.",
+            dryRun => DryRun = !(dryRun is null)
+        },
+        {
             "d|debug",
             "Print debug logs.",
             debug => DebugLog = !(debug is null)
@@ -166,6 +172,7 @@ public class EntryPoint : MonoBehaviour
     private static int DistributedSeed { get; set; } = 0;
 
     private static string ReportXmlPath { get; set; } = null;
+    private static bool DryRun { get; set; }= false;
     private static bool DebugLog { get; set; }= false;
     private static bool Help { get; set; }= false;
 
@@ -212,7 +219,7 @@ public class EntryPoint : MonoBehaviour
         }
         catch (OptionException e)
         {
-            Console.Error.WriteLine("Error: {0}", e.Message);
+            Console.Error.WriteLine("Error: {0}: {1}", e.OptionName, e.Message);
             Console.Error.WriteLine(
                 "Try `{0} --help' for more information",
                 programName
@@ -299,20 +306,47 @@ public class EntryPoint : MonoBehaviour
                     messageSink.DiscoveryCompletionWaitHandle.WaitOne();
                     ITestCase[] testCases =
                         FilterTestCases(messageSink.TestCases).ToArray();
-                    Console.Error.WriteLine(
-                        "{0} test cases were found in {1}.",
-                        testCases.Length,
-                        path
-                    );
-                    ITestFrameworkExecutionOptions executionOptions =
-                        TestFrameworkOptions.ForExecution(configuration);
-                    executionOptions.SetSynchronousMessageReporting(true);
-                    controller.RunTests(
-                        testCases,
-                        sink,
-                        executionOptions
-                    );
-                    messageSink.ExecutionCompletionWaitHandle.WaitOne();
+                    if (DebugLog || DryRun)
+                    {
+                        lock (this)
+                        {
+                            Console.Error.WriteLine(
+                                "{0} test cases were found in {1}:",
+                                testCases.Length,
+                                path
+                            );
+                            foreach (ITestCase testCase in testCases)
+                            {
+                                Console.Error.WriteLine(
+                                    "- {0}",
+                                    testCase.DisplayName
+                                );
+                            }
+
+                            Console.Error.Flush();
+                        }
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine(
+                            "{0} test cases were found in {1}.",
+                            testCases.Length,
+                            path
+                        );
+                    }
+
+                    if (!DryRun)
+                    {
+                        ITestFrameworkExecutionOptions executionOptions =
+                            TestFrameworkOptions.ForExecution(configuration);
+                        executionOptions.SetSynchronousMessageReporting(true);
+                        controller.RunTests(
+                            testCases,
+                            sink,
+                            executionOptions
+                        );
+                        messageSink.ExecutionCompletionWaitHandle.WaitOne();
+                    }
                 }
             }
             catch (Exception e)
@@ -339,7 +373,7 @@ public class EntryPoint : MonoBehaviour
                 assembliesElement.Add(task.Result);
             }
 
-            if (ReportXmlPath is string reportXmlPath)
+            if (!DryRun && ReportXmlPath is string reportXmlPath)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(reportXmlPath));
                 assembliesElement.Save(reportXmlPath);

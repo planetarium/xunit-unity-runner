@@ -8,6 +8,7 @@ To be released.
 
  -  Added `-D`/`--distributed` option for distributed exccution.
  -  Added `-s`/`--distributed-seed` option for distributed exccution.
+ -  Added `--dry-run` option.
 
 
 Version 0.3.1
