@@ -4,6 +4,8 @@ xUnit.net Unity Runner Changelog
 Version 0.3.1
 -------------
 
+Released on November 1, 2021.
+
  -  Fixed a build bug that the runner had hanged and started running tests.
  -  Applied filters became printed to the standard error for easier
     troubleshooting.
