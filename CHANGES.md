@@ -4,7 +4,7 @@ xUnit.net Unity Runner Changelog
 Version 0.5.0
 -------------
 
-To be released.
+Released on November 2, 2021.
 
  -  Added `-f`/`--stop-on-fail` option.
  -  Added `-p`/`--parallel` option.
