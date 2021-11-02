@@ -337,6 +337,7 @@ public class EntryPoint : MonoBehaviour
                 )
                 {
                     var configuration = ConfigReader.Load(path);
+                    configuration.AppDomain = AppDomainSupport.Required;
                     configuration.DiagnosticMessages = true;
                     configuration.StopOnFail = StopOnFail;
                     configuration.MaxParallelThreads = Parallel;
