@@ -140,6 +140,11 @@ public class EntryPoint : MonoBehaviour
             reportXmlPath => ReportXmlPath = reportXmlPath
         },
         {
+            "f|stop-on-fail",
+            "Stop the whole running tests when any test fails.",
+            stopOnFail => StopOnFail = !(stopOnFail is null)
+        },
+        {
             "dry-run",
             "Do not run tests, but only discover tests.  More useful with" +
             "-d/--debug option.",
@@ -172,9 +177,10 @@ public class EntryPoint : MonoBehaviour
     private static int DistributedSeed { get; set; } = 0;
 
     private static string ReportXmlPath { get; set; } = null;
-    private static bool DryRun { get; set; }= false;
-    private static bool DebugLog { get; set; }= false;
-    private static bool Help { get; set; }= false;
+    private static bool StopOnFail { get; set; } = false;
+    private static bool DryRun { get; set; } = false;
+    private static bool DebugLog { get; set; } = false;
+    private static bool Help { get; set; } = false;
 
     private static (string, string) ParseTraitCondition( string traitCondition)
     {
@@ -298,6 +304,7 @@ public class EntryPoint : MonoBehaviour
                 )
                 {
                     var configuration = ConfigReader.Load(path);
+                    configuration.StopOnFail = StopOnFail;
                     ITestFrameworkDiscoveryOptions discoveryOptions =
                         TestFrameworkOptions.ForDiscovery(configuration);
                     discoveryOptions.SetSynchronousMessageReporting(true);
@@ -340,6 +347,7 @@ public class EntryPoint : MonoBehaviour
                         ITestFrameworkExecutionOptions executionOptions =
                             TestFrameworkOptions.ForExecution(configuration);
                         executionOptions.SetSynchronousMessageReporting(true);
+                        executionOptions.SetStopOnTestFail(StopOnFail);
                         controller.RunTests(
                             testCases,
                             sink,
