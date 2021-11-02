@@ -8,6 +8,7 @@ To be released.
 
  -  Added `-f`/`--stop-on-fail` option.
  -  Added `-p`/`--parallel` option.
+ -  Added `-H`/`--hang-seconds` option.
 
 
 Version 0.4.0

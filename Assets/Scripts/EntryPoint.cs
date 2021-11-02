@@ -152,6 +152,16 @@ public class EntryPoint : MonoBehaviour
             reportXmlPath => ReportXmlPath = reportXmlPath
         },
         {
+            "H|hang-seconds=",
+            "Detect hanging tests if a test runs for the specified seconds " +
+            "or longer.  0 disables such detection.  0 by default.",
+            hangSeconds => HangSeconds = int.TryParse(hangSeconds, out int h)
+                ? h
+                : throw new OptionException(
+                    "Expected an integer.",
+                    "-H/--hang-seconds")
+        },
+        {
             "f|stop-on-fail",
             "Stop the whole running tests when any test fails.",
             stopOnFail => StopOnFail = !(stopOnFail is null)
@@ -190,6 +200,7 @@ public class EntryPoint : MonoBehaviour
     private static int DistributedSeed { get; set; } = 0;
 
     private static string ReportXmlPath { get; set; } = null;
+    private static int HangSeconds { get; set; } = 0;
     private static bool StopOnFail { get; set; } = false;
     private static bool DryRun { get; set; } = false;
     private static bool DebugLog { get; set; } = false;
@@ -306,7 +317,16 @@ public class EntryPoint : MonoBehaviour
                     LogWriter = DebugLog ? Console.Error : null,
                 };
                 var summarySink = new DelegatingExecutionSummarySink(messageSink);
-                using (var sink = new DelegatingXmlCreationSink(summarySink, assemblyElement))
+                IExecutionSink sink = new DelegatingXmlCreationSink(summarySink, assemblyElement);
+                if (HangSeconds > 0)
+                {
+                    sink = new DelegatingLongRunningTestDetectionSink(
+                        sink,
+                        TimeSpan.FromSeconds(HangSeconds),
+                        messageSink
+                    );
+                }
+                using (sink)
                 using (
                     var controller = new XunitFrontController(
                         AppDomainSupport.Denied,
@@ -317,8 +337,10 @@ public class EntryPoint : MonoBehaviour
                 )
                 {
                     var configuration = ConfigReader.Load(path);
+                    configuration.DiagnosticMessages = true;
                     configuration.StopOnFail = StopOnFail;
                     configuration.MaxParallelThreads = Parallel;
+                    configuration.LongRunningTestSeconds = HangSeconds;
                     ITestFrameworkDiscoveryOptions discoveryOptions =
                         TestFrameworkOptions.ForDiscovery(configuration);
                     discoveryOptions.SetSynchronousMessageReporting(true);
@@ -360,6 +382,7 @@ public class EntryPoint : MonoBehaviour
                     {
                         ITestFrameworkExecutionOptions executionOptions =
                             TestFrameworkOptions.ForExecution(configuration);
+                        executionOptions.SetDiagnosticMessages(true);
                         executionOptions.SetSynchronousMessageReporting(true);
                         executionOptions.SetStopOnTestFail(StopOnFail);
                         if (Parallel != 1)
