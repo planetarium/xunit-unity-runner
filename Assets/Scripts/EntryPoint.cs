@@ -68,6 +68,18 @@ public class EntryPoint : MonoBehaviour
                 ExcludedTraitConditions.Add(ParseTraitCondition(traitCondition))
         },
         {
+            "p|parallel=",
+            "The maximum number of parallel threads to run tests.  Zero " +
+            "means not to limit the number of threads.  1 by default.",
+            parallel => Parallel = int.TryParse(parallel, out int p) && p >= 0
+                ? p
+                : throw new OptionException(
+                        "The maximum number of parallel threads must be " +
+                        "an integer greater than or equal to zero.",
+                        "-p/--parallel"
+                    )
+        },
+        {
             "D|distributed=",
             "Run only randomly selected tests out of the all discovered " +
             "tests.  This is intended to be used as a single node out of " +
@@ -172,6 +184,7 @@ public class EntryPoint : MonoBehaviour
     static readonly ISet<(string, string)> SelectedTraitConditions =
         new HashSet<(string, string)>();
 
+    private static int Parallel { get; set; } = 1;
     private static int CurrentNode { get; set; } = 0;
     private static int DistributedNodes { get; set; } = 0;
     private static int DistributedSeed { get; set; } = 0;
@@ -305,6 +318,7 @@ public class EntryPoint : MonoBehaviour
                 {
                     var configuration = ConfigReader.Load(path);
                     configuration.StopOnFail = StopOnFail;
+                    configuration.MaxParallelThreads = Parallel;
                     ITestFrameworkDiscoveryOptions discoveryOptions =
                         TestFrameworkOptions.ForDiscovery(configuration);
                     discoveryOptions.SetSynchronousMessageReporting(true);
@@ -348,6 +362,16 @@ public class EntryPoint : MonoBehaviour
                             TestFrameworkOptions.ForExecution(configuration);
                         executionOptions.SetSynchronousMessageReporting(true);
                         executionOptions.SetStopOnTestFail(StopOnFail);
+                        if (Parallel != 1)
+                        {
+                            executionOptions.SetDisableParallelization(true);
+                        }
+                        else
+                        {
+                            executionOptions.SetDisableParallelization(false);
+                            executionOptions.SetMaxParallelThreads(Parallel);
+                        }
+
                         controller.RunTests(
                             testCases,
                             sink,
