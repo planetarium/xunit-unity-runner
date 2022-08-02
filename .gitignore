@@ -70,3 +70,7 @@ crashlytics-build.properties
 alf/
 *.alf
 *.ulf
+
+# Unnecessary parts in the xunit-unity-runner case
+Assets/Resources.meta
+Assets/Resources/
