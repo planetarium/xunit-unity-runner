@@ -5,7 +5,7 @@ xUnit.net Unity Runner Changelog
 Version 0.6.0
 -------------
 
-To be released.
+Released on December 4, 2022.
 
  -  Upgraded Unity from 2020.3.4f1 to 2021.3.5f1.
 
