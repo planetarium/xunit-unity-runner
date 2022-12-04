@@ -401,7 +401,7 @@ public class EntryPoint : MonoBehaviour
                             sink,
                             executionOptions
                         );
-                        messageSink.ExecutionCompletionWaitHandle.WaitOne();
+                        sink.Finished.WaitOne();
                     }
                 }
             }
