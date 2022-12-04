@@ -329,7 +329,7 @@ public class EntryPoint : MonoBehaviour
                 using (sink)
                 using (
                     var controller = new XunitFrontController(
-                        AppDomainSupport.Denied,
+                        AppDomainSupport.Required,
                         path,
                         sourceInformationProvider: new NullSourceInformationProvider(),
                         diagnosticMessageSink: MessageSinkAdapter.Wrap(messageSink)
